@@ -15,4 +15,4 @@ def get_embeddings_model():
 if __name__ == "__main__":
     m = get_embeddings_model()
     result = m.embed_query("Test")
-    print(f"✅ Uspeh! Vektor dužine: {len(result)}")
+    print(f"Uspesno! Vektor je duzine: {len(result)}")

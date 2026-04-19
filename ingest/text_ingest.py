@@ -20,7 +20,6 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
     
     documents, embeddings, ids, metadatas = [], [], [], []
 
-    print(f"Obrađujem {len(chunks)} delova teksta...")
 
     for chunk in chunks:
         vector = embed_model.embed_query(chunk)
@@ -37,7 +36,7 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
         metadatas=metadatas,
         embeddings=embeddings
     )
-    print(f"✅ Uspešno dodato u bazu za trenera: {coach_id}")
+    print(f"Uspesno dodato u bazu za trenera: {coach_id}")
 
 if __name__ == "__main__":
     moj_tekst = "Zgibovi su ključna vežba za razvoj leđnih mišića. Preporucujem svima 3 serije od 8 do 12 ponavljanja."
