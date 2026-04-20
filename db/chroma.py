@@ -18,6 +18,7 @@ class ChromaDBManager:
 
     def add_to_collection(self, coach_id: str, ids: list, documents: list, metadatas: list, embeddings:list):
         collection = self.get_coach_collection(coach_id)
+        print(f"DEBUG: Dodajem {len(documents)} dokumenata u kolekciju collection")
         collection.add(
             ids=ids,
             documents=documents,

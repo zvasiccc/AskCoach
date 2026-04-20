@@ -42,12 +42,13 @@ Suplementi: Preporučujem Kreatin Monohidrat (5g dnevno) i Whey protein nakon tr
 
 5. OPORAVAK I BOLEST
 San je podjednako važan kao i trening. Spavati najmanje 7-8 sati. U slučaju bolesti (povišena temperatura, malaksalost), odmah prekinuti trening. Piti dosta čajeva i vode, jesti lagane supe i krekere dok se organizam ne oporavi. Ne vraćati se u teretanu dok simptomi potpuno ne nestanu."""
-
+ingested_text_2="radi sklekove po 3 serije uvek."
 def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
     embed_model = get_embeddings_model()
     db = ChromaDBManager()
 
     # chunks = [text_content[i:i+500] for i in range(0, len(text_content), 500)]
+    print("uploadujem",text_content)
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=300,
         chunk_overlap=50,
@@ -76,5 +77,5 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
     )
     print(f"Uspesno dodato u bazu za trenera: {coach_id}")
 
-if __name__ == "__main__":
-    ingest_raw_text(ingestd_text, "trener_zeljko")
+# if __name__ == "__main__":
+#     ingest_raw_text(ingested_text_2, "trener_milos")
