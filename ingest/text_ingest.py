@@ -47,8 +47,6 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
     embed_model = get_embeddings_model()
     db = ChromaDBManager()
 
-    # chunks = [text_content[i:i+500] for i in range(0, len(text_content), 500)]
-    print("uploadujem",text_content)
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=300,
         chunk_overlap=50,
