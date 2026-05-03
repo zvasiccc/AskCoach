@@ -4,7 +4,7 @@ import re
 import sys
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from flashrank import Ranker, RerankRequest
 from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
@@ -152,7 +152,7 @@ def hybrid_retrieve(pitanje: str, collection, coach_id: str) -> list[str]:
     return [doc for doc, _ in sorted_docs[:10]]
 
 
-def ask_question(pitanje: str, coach_id: str):
+def ask_question(pitanje: str, coach_id: str,history:list=[]):
     collection = db.get_coach_collection(coach_id)
 
     if collection.count() == 0:
@@ -168,11 +168,18 @@ def ask_question(pitanje: str, coach_id: str):
     final_context_docs = [res["text"] for res in rerank_results[:3]]
 
     context_str = "\n---\n".join(final_context_docs)
-    human_message = f"KONTEKST:\n{context_str}\n\nPITANJE:\n{pitanje}"
-    response = llm.invoke([
-        SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=human_message)
-    ])
+    print(f"DEBUG context:\n{context_str}")
+    messages = [SystemMessage(content=SYSTEM_PROMPT)]
+    for msg in history:
+        if msg.role == "user":
+            messages.append(HumanMessage(content=msg.content))
+        elif msg.role == "assistant":
+            messages.append(AIMessage(content=msg.content))
+
+    # Dodajemo trenutno pitanje sa kontekstom
+    messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{pitanje}"))
+
+    response = llm.invoke(messages)
 
     return response.content, final_context_docs
 
