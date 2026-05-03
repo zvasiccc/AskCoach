@@ -48,9 +48,9 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
     db = ChromaDBManager()
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,
-        chunk_overlap=50,
-        separators=["\n\n", "\n", ".", " "]
+        chunk_size=700,
+        chunk_overlap=350,
+        separators=["\n\n", "\n", "!!! ", ". ", " "]
     )
     
     chunks = text_splitter.split_text(text_content)

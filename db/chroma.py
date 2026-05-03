@@ -18,9 +18,13 @@ class ChromaDBManager:
 
     def add_to_collection(self, coach_id: str, ids: list, documents: list, metadatas: list, embeddings:list):
         collection = self.get_coach_collection(coach_id)
-        print(f"DEBUG: Dodajem {len(documents)} dokumenata u kolekciju collection")
+        existing = collection.get(ids=ids)
+        new_ids = [i for i in ids if i not in existing['ids']]
+        if not new_ids:
+            print("Svi dokumenti već postoje u bazi.")
+            return
         collection.add(
-            ids=ids,
+            ids=new_ids,
             documents=documents,
             metadatas=metadatas,
             embeddings=embeddings
@@ -38,3 +42,7 @@ class ChromaDBManager:
             return True
         except Exception:
             return False
+    
+    def list_coaches(self):
+        collections = self.client.list_collections()
+        return [c.name.replace("coach_", "") for c in collections]
