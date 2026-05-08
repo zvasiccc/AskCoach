@@ -15,7 +15,7 @@ load_dotenv()
 
 
 def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
-    embed_model = get_embeddings_model()
+    embeddings_model = get_embeddings_model()
     db = ChromaDBManager()
 
     text_splitter = RecursiveCharacterTextSplitter(
@@ -30,7 +30,7 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
 
 
     for chunk in chunks:
-        vector = embed_model.embed_query(chunk)
+        vector = embeddings_model.embed_query(chunk)
         
         documents.append(chunk)
         embeddings.append(vector)

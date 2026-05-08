@@ -1,7 +1,10 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from api.models import AskRequest
 from fastapi import FastAPI, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
@@ -12,17 +15,6 @@ from agent.ask_question import ask_question
 db = ChromaDBManager()
 app = FastAPI()
 
-# ─── MODELI ───────────────────────────────────────────────────
-class Message(BaseModel):
-    role: str   # "user" ili "assistant"
-    content: str
-
-class AskRequest(BaseModel):
-    coach_id: str
-    pitanje: str
-    history: Optional[list[Message]] = []  # lista prethodnih poruka
-
-# ─── ENDPOINTS ────────────────────────────────────────────────
 @app.post("/ask")
 async def ask(request: AskRequest):
     odgovor, context = ask_question(
@@ -46,7 +38,7 @@ async def upload_knowledge(
     else:
         text = content.decode("utf-8")
     ingest_raw_text(text, coach_id, source_name=file.filename)
-    return {"message": f"Baza za trenera '{coach_id}' je uspešno ažurirana fajlom {file.filename}."}
+    return {"message": f"Baza '{coach_id}' je uspesno azurirana fajlom {file.filename}."}
 
 @app.get("/coaches")
 async def list_coaches():

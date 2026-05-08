@@ -10,3 +10,22 @@ PRAVILA (ne smeš ih prekršiti):
 - Govor mora biti gramatički ispravan na srpskom jeziku (koristiti padeže pravilno).
 - Izbegavaj doslovno prevođenje sa engleskog.
 - Odgovaraj koncizno i precizno, bez nepotrebnih pojašnjenja."""
+
+STOP_WORDS = {
+    "da", "li", "se", "je", "su", "i", "u", "na", "za", "bi", "sam",
+    "sto", "kako", "koliko", "koji", "koja", "koje", "ako", "ili",
+    "ali", "jer", "što", "sve", "ovo", "ono", "taj", "ta", "to",
+    "mi", "vi", "oni", "one", "moj", "tvoj", "svoj", "neki", "može",
+    "treba", "imam", "ima", "biti", "bih", "moze", "trebam", "hocu"
+}
+
+QUERY_EXPANSION_PROMPT = """Ti si ekspert za fitnes i treniranje.
+Dato ti je korisnikovo pitanje. Generiši 2 različite varijante tog pitanja koje imaju IDENTIČNO ZNAČENJE,
+ali su formulisane drugačije.
+
+Vrati SAMO JSON listu, bez ikakvog teksta pre ili posle. Primer formata:
+["varijanta 1", "varijanta 2"]
+
+Pitanje: {pitanje}"""
+
+MAX_DISTANCE = 1.1

@@ -10,11 +10,11 @@ def test_connection():
     print(f"DEBUG: Token počinje sa: {token[:5]}...") # Provera da li je učitan
     
     try:
-        embed_model = HuggingFaceEndpointEmbeddings(
+        embeddings_model = HuggingFaceEndpointEmbeddings(
             model="sentence-transformers/all-MiniLM-L6-v2",
             huggingfacehub_api_token=token
         )
-        test_vector = embed_model.embed_query("Provera API konekcije")
+        test_vector = embeddings_model.embed_query("Provera API konekcije")
         print(f"Uspeh! Dužina vektora: {len(test_vector)}")
     except Exception as e:
         print(f"Greška: {e}")

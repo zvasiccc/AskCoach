@@ -9,23 +9,18 @@ from flashrank import Ranker, RerankRequest
 from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
-from rank_bm25 import BM25Okapi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from prompts import SYSTEM_PROMPT
 from ingest.embeddings import get_embeddings_model
-from db.chroma import ChromaDBManager
 
+
+from agent.retrieval import hybrid_retrieve
+from prompts import  SYSTEM_PROMPT,  MAX_DISTANCE
 load_dotenv()
 
-MAX_DISTANCE = 1.1
-_bm25_cache = {}
-
-embed_model = get_embeddings_model()
-db = ChromaDBManager()
 ranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
+embeddings_model = get_embeddings_model()
 
 llm = ChatGroq(
     model="llama-3.1-8b-instant",
@@ -38,23 +33,6 @@ eval_llm = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
-
-STOP_WORDS = {
-    "da", "li", "se", "je", "su", "i", "u", "na", "za", "bi", "sam",
-    "sto", "kako", "koliko", "koji", "koja", "koje", "ako", "ili",
-    "ali", "jer", "što", "sve", "ovo", "ono", "taj", "ta", "to",
-    "mi", "vi", "oni", "one", "moj", "tvoj", "svoj", "neki", "može",
-    "treba", "imam", "ima", "biti", "bih", "moze", "trebam", "hocu"
-}
-
-QUERY_EXPANSION_PROMPT = """Ti si ekspert za fitnes i treniranje.
-Dato ti je korisnikovo pitanje. Generiši 2 različite varijante tog pitanja koje imaju IDENTIČNO ZNAČENJE,
-ali su formulisane drugačije.
-
-Vrati SAMO JSON listu, bez ikakvog teksta pre ili posle. Primer formata:
-["varijanta 1", "varijanta 2"]
-
-Pitanje: {pitanje}"""
 
 
 class GroqModel(DeepEvalBaseLLM):
@@ -77,39 +55,10 @@ class GroqModel(DeepEvalBaseLLM):
 eval_model = GroqModel(model=eval_llm)
 
 
-def tokenize(text: str) -> list[str]:
-    tokens = re.sub(r"[^\w\s]", "", text.lower()).split()
-    return [t for t in tokens if t not in STOP_WORDS and len(t) > 2]
-
-
-def get_bm25(collection, coach_id: str):
-    """BM25 keš — pravi se jednom, osvežava se samo kad se baza promeni."""
-    count = collection.count()
-    if coach_id not in _bm25_cache or _bm25_cache[coach_id]["count"] != count:
-        all_docs = collection.get()["documents"]
-        tokenized = [tokenize(doc) for doc in all_docs]
-        _bm25_cache[coach_id] = {
-            "bm25": BM25Okapi(tokenized),
-            "docs": all_docs,
-            "count": count
-        }
-    return _bm25_cache[coach_id]["bm25"], _bm25_cache[coach_id]["docs"]
-
-
-def expand_query(pitanje: str) -> list[str]:
-    try:
-        prompt = QUERY_EXPANSION_PROMPT.format(pitanje=pitanje)
-        response = llm.invoke(prompt)
-        varijante = json.loads(response.content)
-        return [pitanje] + varijante
-    except Exception:
-        return [pitanje]
-
-
 def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict[str, float]:
     seen_docs = {}
     for varijanta in varijante:
-        query_vector = embed_model.embed_query(varijanta)
+        query_vector = embeddings_model.embed_query(varijanta)
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results
@@ -120,55 +69,18 @@ def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict
     return {doc: dist for doc, dist in seen_docs.items() if dist <= MAX_DISTANCE}
 
 
-def bm25_search(pitanje: str, bm25, all_docs: list[str], top_k: int = 10) -> list[tuple[str, float]]:
-    scores = bm25.get_scores(tokenize(pitanje))
-    doc_scores = sorted(zip(all_docs, scores), key=lambda x: x[1], reverse=True)
-    return [(doc, score) for doc, score in doc_scores[:top_k] if score > 0]
 
-
-def hybrid_retrieve(pitanje: str, collection, coach_id: str) -> list[str]:
-    varijante = expand_query(pitanje)
-    bm25, all_docs = get_bm25(collection, coach_id)
-
-    if not all_docs:
+def rerank(pitanje: str, docs: list[str], top_k: int = 3) -> list[str]:
+    if not docs:
         return []
 
-    vector_docs = vector_search(varijante, collection)
-    bm25_docs = bm25_search(pitanje, bm25, all_docs)
+    passages = [{"id": i, "text": doc} for i, doc in enumerate(docs)]
+    results = ranker.rerank(RerankRequest(query=pitanje, passages=passages))
+    return [res["text"] for res in results[:top_k]]
 
-    if not vector_docs and not bm25_docs:
-        return []
+def generate_promt_with_context_and_message_history(pitanje: str, context: list[str], history: list = []) -> str:
+    context_str = "\n---\n".join(context)
 
-    K = 60
-    rrf_scores = {}
-
-    for rank, (doc, _) in enumerate(sorted(vector_docs.items(), key=lambda x: x[1]), start=1):
-        rrf_scores[doc] = rrf_scores.get(doc, 0) + 1 / (K + rank)
-
-    for rank, (doc, _) in enumerate(bm25_docs, start=1):
-        rrf_scores[doc] = rrf_scores.get(doc, 0) + 1 / (K + rank)
-
-    sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
-    return [doc for doc, _ in sorted_docs[:10]]
-
-
-def ask_question(pitanje: str, coach_id: str,history:list=[]):
-    collection = db.get_coach_collection(coach_id)
-
-    if collection.count() == 0:
-        return f"Trener '{coach_id}' nema unesene informacije u bazi.", []
-
-    raw_docs = hybrid_retrieve(pitanje, collection, coach_id)
-
-    if not raw_docs:
-        return "Nažalost, trener nije uneo tu informaciju.", []
-
-    passages = [{"id": i, "text": doc} for i, doc in enumerate(raw_docs)]
-    rerank_results = ranker.rerank(RerankRequest(query=pitanje, passages=passages))
-    final_context_docs = [res["text"] for res in rerank_results[:3]]
-
-    context_str = "\n---\n".join(final_context_docs)
-    print(f"DEBUG context:\n{context_str}")
     messages = [SystemMessage(content=SYSTEM_PROMPT)]
     for msg in history:
         if msg.role == "user":
@@ -176,12 +88,21 @@ def ask_question(pitanje: str, coach_id: str,history:list=[]):
         elif msg.role == "assistant":
             messages.append(AIMessage(content=msg.content))
 
-    # Dodajemo trenutno pitanje sa kontekstom
     messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{pitanje}"))
+    return llm.invoke(messages).content
 
-    response = llm.invoke(messages)
+def ask_question(pitanje: str, coach_id: str,history:list=[]):
 
-    return response.content, final_context_docs
+    raw_docs = hybrid_retrieve(pitanje, coach_id)
+
+    if not raw_docs :
+        return "Nazalost, Trazena informacija se ne nalazi u bazi znanja.", []
+
+    reranked_documents = rerank(pitanje, raw_docs)
+
+    response = generate_promt_with_context_and_message_history(pitanje, reranked_documents, history)
+
+    return response, reranked_documents
 
 
 def run_evaluation(pitanje, odgovor, kontekst):
@@ -199,25 +120,25 @@ def run_evaluation(pitanje, odgovor, kontekst):
     print(f"Razlog:                   {faithfulness.reason}")
 
 
-if __name__ == "__main__":
-    print("--- Fitness Coach AI (Hybrid RAG) ---")
-    eval_mode = input("Evaluacioni mod? (y/n): ").strip().lower() == "y"
+# if __name__ == "__main__":
+#     print("--- Fitness Coach AI (Hybrid RAG) ---")
+#     eval_mode = input("Evaluacioni mod? (y/n): ").strip().lower() == "y"
 
-    while True:
-        user_query = input("\nKorisnik: ").strip()
-        if not user_query:
-            continue
-        if user_query.lower() in ["exit", "izlaz"]:
-            break
+#     while True:
+#         user_query = input("\nKorisnik: ").strip()
+#         if not user_query:
+#             continue
+#         if user_query.lower() in ["exit", "izlaz"]:
+#             break
 
-        llm_answer, used_context = ask_question(user_query, "trener_nikola")
-        print(f"\nASISTENT: {llm_answer}")
+#         llm_answer, used_context = ask_question(user_query, "trener_nikola")
+#         print(f"\nASISTENT: {llm_answer}")
 
-        if eval_mode and used_context:
-            try:
-                print("\n[EVALUACIJA U TOKU...]")
-                run_evaluation(user_query, llm_answer, used_context)
-            except Exception as e:
-                print(f"Evaluacija nije uspela: {e}")
+#         if eval_mode and used_context:
+#             try:
+#                 print("\n[EVALUACIJA U TOKU...]")
+#                 run_evaluation(user_query, llm_answer, used_context)
+#             except Exception as e:
+#                 print(f"Evaluacija nije uspela: {e}")
 
-        print("-" * 50)
+#         print("-" * 50)

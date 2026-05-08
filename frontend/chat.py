@@ -3,14 +3,11 @@ import requests
 
 API_URL = "http://localhost:8000"
 
-st.set_page_config(page_title="AskCoach", layout="centered")
-st.title("🏋️‍♂️ AskCoach")
+st.set_page_config(page_title="ChatWithAI", layout="centered")
+st.title("Chat with AI")
 
-# ─── SIDEBAR ──────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Podešavanja")
-    
-    # Dohvati listu trenera
+
     try:
         response = requests.get(f"{API_URL}/coaches")
         coaches = response.json().get("coaches", [])
@@ -20,24 +17,21 @@ with st.sidebar:
         st.error("Server nije dostupan.")
 
     if coach_options:
-        selected_coach = st.selectbox("Izaberi trenera:", coach_options)
+        selected_coach = st.selectbox(" ", coach_options)
     else:
-        selected_coach = st.text_input("ID Trenera:", value="trener_zeljko")
+        selected_coach = st.text_input("ID Baze znanja:", value="trener_zeljko")
 
-    if st.button("🗑️ Očisti razgovor"):
+    if st.button("Ocisti konverzaciju"):
         st.session_state["messages"] = []
         st.rerun()
 
-# ─── SESSION STATE ────────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
-# ─── PRIKAZ ISTORIJE ──────────────────────────────────────────
 for msg in st.session_state["messages"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# ─── INPUT ────────────────────────────────────────────────────
 if user_input := st.chat_input("Postavi pitanje treneru..."):
     # Prikaži korisnikovu poruku
     st.session_state["messages"].append({"role": "user", "content": user_input})
@@ -67,10 +61,10 @@ if user_input := st.chat_input("Postavi pitanje treneru..."):
 
         st.write(odgovor)
         
-        with st.expander("🔍 Debug info"):
-            st.write(f"**Trener:** {selected_coach}")
-            for i, chunk in enumerate(context):
-                st.text_area(f"Chunk {i+1}", value=chunk, height=80, disabled=True, key=f"chunk_{len(st.session_state['messages'])}_{i}")
+        # with st.expander("🔍 Debug info"):
+        #     st.write(f"**Trener:** {selected_coach}")
+        #     for i, chunk in enumerate(context):
+        #         st.text_area(f"Chunk {i+1}", value=chunk, height=80, disabled=True, key=f"chunk_{len(st.session_state['messages'])}_{i}")
 
-    # Sačuvaj odgovor u history
+    #cuva odgovor u history
     st.session_state["messages"].append({"role": "assistant", "content": odgovor})

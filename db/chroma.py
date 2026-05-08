@@ -10,9 +10,9 @@ class ChromaDBManager:
         #fizicka lokacija baze na disku
         self.persist_directory = os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.client = chromadb.PersistentClient(path=self.persist_directory)
+        self._bm25_cache = {}
 
     def get_coach_collection(self, coach_id: str):
-        #specificna baza trenera
         collection_name = f"coach_{coach_id}"
         return self.client.get_or_create_collection(name=collection_name)
 
@@ -39,6 +39,7 @@ class ChromaDBManager:
         collection_name = f"coach_{coach_id}"
         try:
             self.client.delete_collection(name=collection_name)
+            self.invalidate_cache(coach_id)
             return True
         except Exception:
             return False

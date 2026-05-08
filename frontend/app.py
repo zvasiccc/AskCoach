@@ -4,16 +4,16 @@ import requests
 API_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="AskCoach - Admin Panel", layout="centered")
-st.title("Upravljanje bazom znanja trenera")
+st.title("Upravljanje bazom znanja")
 
-st.header("Dodaj znanje treneru")
+st.header("Dodaj znanje")
 
-coach_id = st.text_input("ID Trenera (npr. trener_zeljko)", value="trener_zeljko")
+coach_id = st.text_input("ID baze znanja", value="")
 uploaded_file = st.file_uploader("Odaberite fajl", type=["txt","pdf"])
 
 if st.button("Učitaj u bazu"):
     if uploaded_file and coach_id:
-        with st.spinner("Obrađujem i indeksiram..."):
+        with st.spinner("Obradjujem..."):
             files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/plain")}
             data = {"coach_id": coach_id}
             try:
@@ -26,12 +26,11 @@ if st.button("Učitaj u bazu"):
             except Exception as e:
                 st.error(f"Server nije dostupan: {e}")
     else:
-        st.warning("Unesite ID trenera i odaberite fajl.")
+        st.warning("Unesite ID baze odaberite fajl.")
 
 st.divider()
 
-# ─── PREGLED BAZA ─────────────────────────────────────────────
-st.header("Baze trenera")
+st.header("Postojece baze znanja")
 
 try:
     response = requests.get(f"{API_URL}/coaches")
@@ -39,20 +38,20 @@ try:
         coaches = response.json()["coaches"]
 
         if not coaches:
-            st.info("Nema unesenih trenera u bazi.")
+            st.info("Nema postojecih baza znanja")
         else:
             for coach in coaches:
                 col1, col2, col3 = st.columns([3, 1, 1])
 
                 with col1:
-                    st.write(f"👤 **{coach['id']}** — {coach['chunk_count']} chunkova")
+                    st.write(f"**{coach['id']}** — {coach['chunk_count']} chunkova")
 
                 with col2:
-                    if st.button("🔍 Pregled", key=f"preview_{coach['id']}"):
+                    if st.button("Pregled", key=f"preview_{coach['id']}"):
                         st.session_state["preview_coach"] = coach["id"]
 
                 with col3:
-                    if st.button("🗑️ Obriši", key=f"delete_{coach['id']}"):
+                    if st.button("Obriši", key=f"delete_{coach['id']}"):
                         st.session_state["confirm_delete"] = coach["id"]
 
                 # Potvrda brisanja
