@@ -4,13 +4,12 @@ import requests
 API_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="AskCoach - Admin Panel", layout="centered")
-st.title("🏋️‍♂️ Upravljanje bazom znanja trenera")
+st.title("Upravljanje bazom znanja trenera")
 
-# ─── UPLOAD SEKCIJA ───────────────────────────────────────────
 st.header("Dodaj znanje treneru")
 
 coach_id = st.text_input("ID Trenera (npr. trener_zeljko)", value="trener_zeljko")
-uploaded_file = st.file_uploader("Odaberite .txt fajl", type=["txt"])
+uploaded_file = st.file_uploader("Odaberite fajl", type=["txt","pdf"])
 
 if st.button("Učitaj u bazu"):
     if uploaded_file and coach_id:
