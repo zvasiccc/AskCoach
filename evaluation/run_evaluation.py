@@ -16,16 +16,16 @@ from agent.ask_question import ask_question
 from ragas.llms import LangchainLLMWrapper
 from langchain_groq import ChatGroq
 
-groq_llm = LangchainLLMWrapper(ChatGroq(
-    model="llama-3.1-8b-instant",
+groq_eval_llm = LangchainLLMWrapper(ChatGroq(
+    model="llama-3.3-70b-versatile",
     groq_api_key=os.getenv("GROQ_API_KEY")
 ))
 
 metrics = [
-    Faithfulness(llm=groq_llm),
-    AnswerRelevancy(llm=groq_llm),
-    ContextPrecision(llm=groq_llm),
-    ContextRecall(llm=groq_llm),
+    Faithfulness(llm=groq_eval_llm),
+    AnswerRelevancy(llm=groq_eval_llm),
+    ContextPrecision(llm=groq_eval_llm),
+    ContextRecall(llm=groq_eval_llm),
 ]
 
 def run_evaluation(coach_id: str, test_cases: list):
@@ -34,7 +34,6 @@ def run_evaluation(coach_id: str, test_cases: list):
     for case in test_cases:
         question = case["question"]
         
-        # Dohvati odgovor
         answer, reranked_docs = ask_question(question, coach_id)
         
         questions.append(question)
@@ -49,11 +48,11 @@ def run_evaluation(coach_id: str, test_cases: list):
         "ground_truth": ground_truths
     })
 
-    results = evaluate(dataset,metrics=metrics,llm=groq_llm)
-    print(f"Faithfulness:      {results['faithfulness']:.3f}  (1.0 = nikad ne izmišlja)")
-    print(f"Answer Relevancy:  {results['answer_relevancy']:.3f}  (1.0 = uvek odgovara na pitanje)")
-    print(f"Context Precision: {results['context_precision']:.3f}  (1.0 = samo relevantni chunkovi)")
-    print(f"Context Recall:    {results['context_recall']:.3f}  (1.0 = uvek nalazi pravi chunk)")
+    results = evaluate(dataset,metrics=metrics,llm=groq_eval_llm)
+    print(f"Faithfulness:{results['faithfulness']:.3f}")
+    print(f"Answer Relevancy:{results['answer_relevancy']:.3f}")
+    print(f"Context Precision:{results['context_precision']:.3f}")
+    print(f"Context Recall:{results['context_recall']:.3f}")
     
     return results
 

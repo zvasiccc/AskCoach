@@ -15,7 +15,7 @@ headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 payload = {"inputs": ["test rečenica"], "options": {"wait_for_model": True}}
 
 for url in urls:
-    print(f"\n--- Testiram: {url} ---")
+    print(f"\n Testiram: {url}")
     r = requests.post(url, headers=headers, json=payload)
     print(f"Status: {r.status_code}")
-    print(f"Odgovor: {r.text[:300]}")
+    print(f"answer: {r.text[:300]}")

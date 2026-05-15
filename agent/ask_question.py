@@ -1,6 +1,4 @@
-import json
 import os
-import re
 import sys
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -58,7 +56,7 @@ eval_model = GroqModel(model=eval_llm)
 def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict[str, float]:
     seen_docs = {}
     for varijanta in varijante:
-        query_vector = embeddings_model.embed_query(varijanta)
+        query_vector = embeddings_model.embeddings_query(varijanta)
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results
@@ -70,15 +68,15 @@ def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict
 
 
 
-def rerank(pitanje: str, docs: list[str], top_k: int = 3) -> list[str]:
+def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
     if not docs:
         return []
 
     passages = [{"id": i, "text": doc} for i, doc in enumerate(docs)]
-    results = ranker.rerank(RerankRequest(query=pitanje, passages=passages))
+    results = ranker.rerank(RerankRequest(query=question, passages=passages))
     return [res["text"] for res in results[:top_k]]
 
-def generate_promt_with_context_and_message_history(pitanje: str, context: list[str], history: list = []) -> str:
+def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = []) -> str:
     context_str = "\n---\n".join(context)
 
     messages = [SystemMessage(content=SYSTEM_PROMPT)]
@@ -88,40 +86,39 @@ def generate_promt_with_context_and_message_history(pitanje: str, context: list[
         elif msg.role == "assistant":
             messages.append(AIMessage(content=msg.content))
 
-    messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{pitanje}"))
+    messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{question}"))
     return llm.invoke(messages).content
 
-def ask_question(pitanje: str, coach_id: str,history:list=[]):
+def ask_question(question: str, coach_id: str,history:list=[]):
 
-    raw_docs = hybrid_retrieve(pitanje, coach_id)
+    raw_docs = hybrid_retrieve(question, coach_id)
 
     if not raw_docs :
-        return "Nazalost, Trazena informacija se ne nalazi u bazi znanja.", []
+        return "Nazalost, trazena informacija se ne nalazi u bazi znanja.", []
 
-    reranked_documents = rerank(pitanje, raw_docs)
+    reranked_documents = rerank(question, raw_docs)
 
-    response = generate_promt_with_context_and_message_history(pitanje, reranked_documents, history)
+    response = generate_promt_with_context_and_message_history(question, reranked_documents, history)
 
     return response, reranked_documents
 
 
-def run_evaluation(pitanje, odgovor, kontekst):
+def run_evaluation(question, answer, context):
     test_case = LLMTestCase(
-        input=pitanje,
-        actual_output=odgovor,
-        retrieval_context=kontekst
+        input=question,
+        actual_output=answer,
+        retrieval_context=context
     )
     faithfulness = FaithfulnessMetric(threshold=0.7, model=eval_model)
     relevancy = AnswerRelevancyMetric(threshold=0.5, model=eval_model)
     faithfulness.measure(test_case)
     relevancy.measure(test_case)
-    print(f"Faithfulness (Vernost):   {faithfulness.score:.2f}")
-    print(f"Relevancy (Relevantnost): {relevancy.score:.2f}")
-    print(f"Razlog:                   {faithfulness.reason}")
+    print(f"Faithfulness:{faithfulness.score:.2f}")
+    print(f"Relevancy:{relevancy.score:.2f}")
+    print(f"Razlog:{faithfulness.reason}")
 
 
 # if __name__ == "__main__":
-#     print("--- Fitness Coach AI (Hybrid RAG) ---")
 #     eval_mode = input("Evaluacioni mod? (y/n): ").strip().lower() == "y"
 
 #     while True:

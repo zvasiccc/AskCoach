@@ -2,12 +2,12 @@ import os
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from dotenv import load_dotenv
 
-# Ova linija učitava podatke iz .env fajla u memoriju
+#ucitava podatke iz .env fajla u memoriju
 load_dotenv()
 
 def test_connection():
     token = os.getenv("HF_TOKEN")
-    print(f"DEBUG: Token počinje sa: {token[:5]}...") # Provera da li je učitan
+    print(f"DEBUG: Token počinje sa: {token[:5]}...") 
     
     try:
         embeddings_model = HuggingFaceEndpointEmbeddings(

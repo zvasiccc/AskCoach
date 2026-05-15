@@ -30,7 +30,7 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
 
 
     for chunk in chunks:
-        vector = embeddings_model.embed_query(chunk)
+        vector = embeddings_model.embeddings_query(chunk)
         
         documents.append(chunk)
         embeddings.append(vector)
@@ -55,4 +55,4 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     return text
     
 # if __name__ == "__main__":
-#     ingest_raw_text(ingested_text_2, "trener_milos")
+#     ingest_raw_text(ingested_text_2, "trener_zeljko")

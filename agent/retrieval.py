@@ -35,8 +35,8 @@ def expand_query(pitanje: str) -> list[str]:
     try:
         prompt = QUERY_EXPANSION_PROMPT.format(pitanje=pitanje)
         response = llm.invoke(prompt)
-        varijante = json.loads(response.content)
-        return [pitanje] + varijante
+        question_variants = json.loads(response.content)
+        return [pitanje] + question_variants
     except Exception:
         return [pitanje]
 
@@ -46,6 +46,7 @@ def bm25_search(pitanje: str, bm25, all_docs: list[str], top_k: int = 10) -> lis
     doc_scores = sorted(zip(all_docs, scores), key=lambda x: x[1], reverse=True)
     return [(doc, score) for doc, score in doc_scores[:top_k] if score > 0]
 
+#vraca bm25 indeks svih chunkova trenera
 def get_bm25(collection, coach_id: str, db_cache):
     count = collection.count()
     if coach_id not in db_cache or db_cache[coach_id]["count"] != count:
@@ -58,10 +59,10 @@ def get_bm25(collection, coach_id: str, db_cache):
         }
     return db_cache[coach_id]["bm25"], db_cache[coach_id]["docs"]
 
-def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict[str, float]:
+def vector_search(question_variants: list[str], collection, n_results: int = 10) -> dict[str, float]:
     seen_docs = {}
-    for varijanta in varijante:
-        query_vector = embeddings_model.embed_query(varijanta)
+    for variant in question_variants:
+        query_vector = embeddings_model.embeddings_query(variant)
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results
@@ -72,31 +73,31 @@ def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict
     return {doc: dist for doc, dist in seen_docs.items() if dist <= MAX_DISTANCE}
 
 
-def hybrid_retrieve(pitanje: str, coach_id: str) -> list[str]:
+def hybrid_retrieve(question: str, coach_id: str) -> list[str]:
     collection = db.get_coach_collection(coach_id)
 
     if collection.count() == 0:
         return []
     
-    expand_query_variants = expand_query(pitanje)
-    bm25, all_docs = get_bm25(collection, coach_id, db._bm25_cache)
+    expand_query_variants = expand_query(question)
+    bm25_obj, all_docs = get_bm25(collection, coach_id, db._bm25_cache)
 
     if not all_docs:
         return []
 
-    vector_docs = vector_search(expand_query_variants, collection)
-    bm25_docs = bm25_search(pitanje, bm25, all_docs)
+    top_bm25_docs = bm25_search(question, bm25_obj, all_docs)
+    top_vector_docs = vector_search(expand_query_variants, collection)
 
-    if not vector_docs and not bm25_docs:
+    if not top_vector_docs and not top_bm25_docs:
         return []
 
     K = 60
     rrf_scores = {}
 
-    for rank, (doc, _) in enumerate(sorted(vector_docs.items(), key=lambda x: x[1]), start=1):
+    for rank, (doc, _) in enumerate(sorted(top_vector_docs.items(), key=lambda x: x[1]), start=1):
         rrf_scores[doc] = rrf_scores.get(doc, 0) + 1 / (K + rank)
 
-    for rank, (doc, _) in enumerate(bm25_docs, start=1):
+    for rank, (doc, _) in enumerate(top_bm25_docs, start=1):
         rrf_scores[doc] = rrf_scores.get(doc, 0) + 1 / (K + rank)
 
     sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)

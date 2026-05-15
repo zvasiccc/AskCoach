@@ -3,7 +3,7 @@ import requests
 
 API_URL = "http://localhost:8000"
 
-st.set_page_config(page_title="AskCoach - Admin Panel", layout="centered")
+st.set_page_config(page_title="ChatWithAI - Upload", layout="centered")
 st.title("Upravljanje bazom znanja")
 
 st.header("Dodaj znanje")
@@ -11,7 +11,7 @@ st.header("Dodaj znanje")
 coach_id = st.text_input("ID baze znanja", value="")
 uploaded_file = st.file_uploader("Odaberite fajl", type=["txt","pdf"])
 
-if st.button("Učitaj u bazu"):
+if st.button("Ucitaj u bazu"):
     if uploaded_file and coach_id:
         with st.spinner("Obradjujem..."):
             files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/plain")}
@@ -26,7 +26,7 @@ if st.button("Učitaj u bazu"):
             except Exception as e:
                 st.error(f"Server nije dostupan: {e}")
     else:
-        st.warning("Unesite ID baze odaberite fajl.")
+        st.warning("Unesite ID baze i odaberite fajl.")
 
 st.divider()
 
@@ -51,26 +51,26 @@ try:
                         st.session_state["preview_coach"] = coach["id"]
 
                 with col3:
-                    if st.button("Obriši", key=f"delete_{coach['id']}"):
+                    if st.button("Obrisi", key=f"delete_{coach['id']}"):
                         st.session_state["confirm_delete"] = coach["id"]
 
                 # Potvrda brisanja
                 if st.session_state.get("confirm_delete") == coach["id"]:
-                    st.warning(f"Sigurno želiš da obrišeš bazu za **{coach['id']}**?")
+                    st.warning(f"Da li ste sigurni da zelite da obrisete bazu za **{coach['id']}**?")
                     c1, c2 = st.columns(2)
                     with c1:
-                        if st.button("✅ Da, obriši", key=f"confirm_{coach['id']}"):
+                        if st.button("Obrisi", key=f"confirm_{coach['id']}"):
                             del_response = requests.delete(f"{API_URL}/coaches/{coach['id']}")
                             if del_response.status_code == 200:
                                 st.success(f"Baza za {coach['id']} obrisana.")
                                 st.session_state.pop("confirm_delete", None)
                                 st.rerun()
                     with c2:
-                        if st.button("❌ Otkaži", key=f"cancel_{coach['id']}"):
+                        if st.button("Otkazi", key=f"cancel_{coach['id']}"):
                             st.session_state.pop("confirm_delete", None)
                             st.rerun()
 
-                # Pregled chunkova
+                #pregled chunkova
                 if st.session_state.get("preview_coach") == coach["id"]:
                     preview_response = requests.get(f"{API_URL}/coaches/{coach['id']}/chunks")
                     if preview_response.status_code == 200:
@@ -88,4 +88,4 @@ try:
 except Exception as e:
     st.error(f"Server nije dostupan: {e}")
 
-st.sidebar.info("AskCoach Admin Panel — upravljanje vektorskim bazama trenera.")
+st.sidebar.info("Admin Panel — upravljanje bazama znanja")

@@ -17,13 +17,13 @@ app = FastAPI()
 
 @app.post("/ask")
 async def ask(request: AskRequest):
-    odgovor, context = ask_question(
-        pitanje=request.pitanje,
+    answer, context = ask_question(
+        question=request.pitanje,
         coach_id=request.coach_id,
         history=request.history
     )
     return {
-        "odgovor": odgovor,
+        "answer": answer,
         "context": context
     }
 
@@ -40,6 +40,7 @@ async def upload_knowledge(
     ingest_raw_text(text, coach_id, source_name=file.filename)
     return {"message": f"Baza '{coach_id}' je uspesno azurirana fajlom {file.filename}."}
 
+#pomocne funkcije
 @app.get("/coaches")
 async def list_coaches():
     coaches = []
