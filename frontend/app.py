@@ -9,7 +9,7 @@ st.set_page_config(page_title="ChatWithAI - Upload", layout="centered")
 def check_login(username, password):
     users = st.secrets.get("korisnici", {})
     user = users.get(username)
-    if user and user["lozinka"] == password:
+    if user and user["password"] == password:
         result = dict(user)
         result["username"] = username
         return result
@@ -43,7 +43,7 @@ if role != "trener":
 st.title("Upravljanje bazom znanja")
 
 with st.sidebar:
-    st.caption(f"{current_user['ime']} — {role}")
+    st.caption(f"{current_user['full_name']} — {role}")
     if st.button("Odjavi se"):
         st.session_state["current_user"] = None
         st.rerun()
@@ -55,7 +55,7 @@ all_users = st.secrets.get("korisnici", {})
 client_usernames = current_user.get("clients_ids", [])
 
 client_options = {
-    all_users[k]["ime"]: k
+    all_users[k]["full_name"]: k
     for k in client_usernames
     if k in all_users
 }
