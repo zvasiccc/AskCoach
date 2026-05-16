@@ -7,5 +7,8 @@ class Message(BaseModel):
 
 class AskRequest(BaseModel):
     coach_id: str
-    pitanje: str
+    client_id: str
+    question: str
     history: Optional[list[Message]] = []  
+    role: str = "trener"
+    

@@ -18,9 +18,11 @@ app = FastAPI()
 @app.post("/ask")
 async def ask(request: AskRequest):
     answer, context = ask_question(
-        question=request.pitanje,
+        question=request.question,
         coach_id=request.coach_id,
-        history=request.history
+        client_id=request.client_id,
+        history=request.history,
+        role=request.role
     )
     return {
         "answer": answer,
@@ -30,6 +32,7 @@ async def ask(request: AskRequest):
 @app.post("/upload")
 async def upload_knowledge(
     coach_id: str = Form(...),
+    client_id:str = Form(...),
     file: UploadFile = File(...)
 ):
     content = await file.read()
@@ -37,7 +40,7 @@ async def upload_knowledge(
         text = extract_text_from_pdf(content)
     else:
         text = content.decode("utf-8")
-    ingest_raw_text(text, coach_id, source_name=file.filename)
+    ingest_raw_text(text, coach_id, client_id, source_name=file.filename)
     return {"message": f"Baza '{coach_id}' je uspesno azurirana fajlom {file.filename}."}
 
 #pomocne funkcije

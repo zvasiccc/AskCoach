@@ -14,7 +14,7 @@ from db.chroma import ChromaDBManager
 load_dotenv()
 
 
-def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
+def ingest_raw_text(text_content, coach_id, client_id, source_name="manual_upload"):
     embeddings_model = get_embeddings_model()
     db = ChromaDBManager()
 
@@ -35,7 +35,11 @@ def ingest_raw_text(text_content, coach_id, source_name="manual_upload"):
         documents.append(chunk)
         embeddings.append(vector)
         ids.append(str(uuid.uuid4()))
-        metadatas.append({"source": source_name, "coach_id": coach_id})
+        metadatas.append({
+            "source": source_name,
+            "coach_id": coach_id,
+            "client_id": client_id if client_id else "unknown"
+            })
 
     db.add_to_collection(
         coach_id=coach_id,

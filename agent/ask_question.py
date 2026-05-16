@@ -14,7 +14,7 @@ from ingest.embeddings import get_embeddings_model
 
 
 from agent.retrieval import hybrid_retrieve
-from prompts import  SYSTEM_PROMPT,  MAX_DISTANCE
+from prompts import  MAX_DISTANCE, get_system_prompt
 load_dotenv()
 
 ranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
@@ -76,10 +76,11 @@ def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
     results = ranker.rerank(RerankRequest(query=question, passages=passages))
     return [res["text"] for res in results[:top_k]]
 
-def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = []) -> str:
+def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = [], role: str = "trener") -> str:
     context_str = "\n---\n".join(context)
+    system_prompt = get_system_prompt(role)
 
-    messages = [SystemMessage(content=SYSTEM_PROMPT)]
+    messages = [SystemMessage(content=system_prompt)]
     for msg in history:
         if msg.role == "user":
             messages.append(HumanMessage(content=msg.content))
@@ -89,16 +90,16 @@ def generate_promt_with_context_and_message_history(question: str, context: list
     messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{question}"))
     return llm.invoke(messages).content
 
-def ask_question(question: str, coach_id: str,history:list=[]):
+def ask_question(question: str, coach_id: str,client_id:str, history:list=[],role: str = "trener"):
 
-    raw_docs = hybrid_retrieve(question, coach_id)
+    raw_docs = hybrid_retrieve(question, coach_id,client_id)
 
     if not raw_docs :
         return "Nazalost, trazena informacija se ne nalazi u bazi znanja.", []
 
     reranked_documents = rerank(question, raw_docs)
 
-    response = generate_promt_with_context_and_message_history(question, reranked_documents, history)
+    response = generate_promt_with_context_and_message_history(question, reranked_documents, history,role)
 
     return response, reranked_documents
 
