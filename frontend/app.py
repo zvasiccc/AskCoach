@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 
+from shared.models import RoleEnum
+
 API_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="ChatWithAI - Upload", layout="centered")
@@ -36,7 +38,7 @@ current_user = st.session_state["current_user"]
 role = current_user["uloga"]
 
 # Samo trener moze da pristupi upload stranici
-if role != "trener":
+if role != RoleEnum.Coach:
     st.error("Nemate pristup ovoj stranici.")
     st.stop()
 

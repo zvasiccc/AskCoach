@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 
+from shared.models import RoleEnum
+
 API_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="ChatWithAI", layout="centered")
@@ -40,7 +42,7 @@ role = current_user["uloga"]
 with st.sidebar:
     st.caption(f"{current_user['full_name']} — {role}")
 
-    if role == "trener":
+    if role == RoleEnum.Coach:
         all_users = st.secrets.get("korisnici", {})
         client_usernames = current_user.get("clients_ids", [])
 

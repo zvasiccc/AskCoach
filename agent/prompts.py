@@ -1,4 +1,7 @@
-SYSTEM_PROMPT_TRENER = """Ti si asistent koji pomaže TRENERU da se podsetí informacija o svojim klijentima.
+from shared.models import RoleEnum
+
+
+SYSTEM_PROMPT_TRENER = """Ti si asistent koji pomaže TRENERU da se podseti informacija o svojim klijentima.
 Odgovaraš ISKLJUČIVO na osnovu dostavljenog KONTEKSTA.
 
 PRAVILA:
@@ -19,9 +22,9 @@ PRAVILA:
 - Odgovaraj motivišuće ali tačno — ne dodavaj pohvale koje nisu u kontekstu."""
 
 def get_system_prompt(role: str) -> str:
-    if role == "klijent":
+    if role == RoleEnum.Client:
         return SYSTEM_PROMPT_CLIENT
-    return SYSTEM_PROMPT_TRENER  # default je trener
+    return SYSTEM_PROMPT_TRENER  
 
 STOP_WORDS = {
     "da", "li", "se", "je", "su", "i", "u", "na", "za", "bi", "sam",

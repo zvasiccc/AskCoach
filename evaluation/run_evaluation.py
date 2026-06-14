@@ -12,7 +12,7 @@ from ragas.metrics.collections import (
     ContextRecall
 )
 from datasets import Dataset
-from agent.ask_question import ask_question
+from agent.agent import ask_question
 from ragas.llms import LangchainLLMWrapper
 from langchain_groq import ChatGroq
 

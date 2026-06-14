@@ -4,13 +4,13 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.models import AskRequest
+from shared.models import AskRequest
 from fastapi import FastAPI, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 from ingest.text_ingest import extract_text_from_pdf, ingest_raw_text
 from db.chroma import ChromaDBManager
-from agent.ask_question import ask_question
+from agent.agent import ask_question
 
 db = ChromaDBManager()
 app = FastAPI()

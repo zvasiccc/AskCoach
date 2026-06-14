@@ -4,13 +4,13 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from flashrank import Ranker, RerankRequest
-from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from ingest.embeddings import get_embeddings_model
+from shared.models import GroqModel, RoleEnum
 
 
 from agent.retrieval import hybrid_retrieve
@@ -32,31 +32,13 @@ eval_llm = ChatGroq(
     temperature=0
 )
 
-
-class GroqModel(DeepEvalBaseLLM):
-    def __init__(self, model):
-        self.model = model
-
-    def load_model(self):
-        return self.model
-
-    def generate(self, prompt: str) -> str:
-        return self.load_model().invoke(prompt).content
-
-    async def a_generate(self, prompt: str) -> str:
-        return (await self.load_model().ainvoke(prompt)).content
-
-    def get_model_name(self):
-        return self.model.model_name
-
-
 eval_model = GroqModel(model=eval_llm)
 
 
-def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict[str, float]:
+def vector_search(query_variants: list[str], collection, n_results: int = 10) -> dict[str, float]:
     seen_docs = {}
-    for varijanta in varijante:
-        query_vector = embeddings_model.embeddings_query(varijanta)
+    for variant in query_variants:
+        query_vector = embeddings_model.embeddings_query(variant)
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results
@@ -67,7 +49,6 @@ def vector_search(varijante: list[str], collection, n_results: int = 10) -> dict
     return {doc: dist for doc, dist in seen_docs.items() if dist <= MAX_DISTANCE}
 
 
-
 def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
     if not docs:
         return []
@@ -76,7 +57,7 @@ def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
     results = ranker.rerank(RerankRequest(query=question, passages=passages))
     return [res["text"] for res in results[:top_k]]
 
-def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = [], role: str = "trener") -> str:
+def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = [], role: str = RoleEnum.Coach) -> str:
     context_str = "\n---\n".join(context)
     system_prompt = get_system_prompt(role)
 
@@ -90,7 +71,7 @@ def generate_promt_with_context_and_message_history(question: str, context: list
     messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{question}"))
     return llm.invoke(messages).content
 
-def ask_question(question: str, coach_id: str,client_id:str, history:list=[],role: str = "trener"):
+def ask_question(question: str, coach_id: str,client_id:str, history:list=[],role: str = RoleEnum.Coach):
 
     raw_docs = hybrid_retrieve(question, coach_id,client_id)
 
