@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
-
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from shared.models import RoleEnum
 
 API_URL = "http://localhost:8000"
@@ -94,7 +97,7 @@ if st.button("Učitaj u bazu"):
 
 st.divider()
 
-# ── PREGLED BAZA ──────────────────────────────────────────────────
+
 st.header("Postojeće baze znanja")
 
 try:

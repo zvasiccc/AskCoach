@@ -1,13 +1,18 @@
 from enum import Enum
-
-from pydantic import BaseModel
 from typing import Optional
+from pydantic import BaseModel
 from deepeval.models.base_model import DeepEvalBaseLLM
-from shared.models import RoleEnum
+
+
+class RoleEnum(str, Enum):
+    Coach = "coach"
+    Client = "client"
+
 
 class Message(BaseModel):
     role: str   
     content: str
+
 
 class AskRequest(BaseModel):
     coach_id: str
@@ -15,7 +20,8 @@ class AskRequest(BaseModel):
     question: str
     history: Optional[list[Message]] = []  
     role: str = RoleEnum.Coach
-    
+
+
 class GroqModel(DeepEvalBaseLLM):
     def __init__(self, model):
         self.model = model
@@ -31,8 +37,3 @@ class GroqModel(DeepEvalBaseLLM):
 
     def get_model_name(self):
         return self.model.model_name
-
-
-class RoleEnum(str, Enum):
-    Coach= "coach"
-    Client = "client"
