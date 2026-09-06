@@ -17,7 +17,7 @@ from ragas.llms import LangchainLLMWrapper
 from langchain_groq import ChatGroq
 
 groq_eval_llm = LangchainLLMWrapper(ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     groq_api_key=os.getenv("GROQ_API_KEY")
 ))
 

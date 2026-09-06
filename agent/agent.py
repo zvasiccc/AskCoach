@@ -21,13 +21,13 @@ ranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
 embeddings_model = get_embeddings_model()
 
 llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-20b",
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
 
 eval_llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
