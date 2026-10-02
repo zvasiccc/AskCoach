@@ -98,62 +98,70 @@ if st.button("Učitaj u bazu"):
 st.divider()
 
 
-st.header("Postojeće baze znanja")
+st.header("Pregled baze znanja")
+
+logged_user_id = current_user["username"]
 
 try:
-    response = requests.get(f"{API_URL}/coaches")
+    response = requests.get(f"{API_URL}/coaches/{logged_user_id}")
+    
     if response.status_code == 200:
-        all_collections = response.json()["coaches"]
+        collection = response.json()
+        
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.write(f"**{collection['id']}** — {collection['chunk_count']} segment")
 
-        # Trener vidi samo svoju kolekciju
-        own_collections = [c for c in all_collections if c["id"] == selected_coach_id]
+        with col2:
+            if st.button("Pregled", key=f"preview_{collection['id']}"):
+                st.session_state["preview_collection"] = collection['id']
 
-        if not own_collections:
-            st.info("Nemate još uvek nijednu bazu znanja.")
-        else:
-            for collection in own_collections:
-                col1, col2, col3 = st.columns([3, 1, 1])
+        with col3:
+            if st.button("Obriši", key=f"delete_{collection['id']}"):
+                st.session_state["confirm_delete"] = collection['id']
 
-                with col1:
-                    st.write(f"**{collection['id']}** — {collection['chunk_count']} chunkova")
-
-                with col2:
-                    if st.button("Pregled", key=f"preview_{collection['id']}"):
-                        st.session_state["preview_collection"] = collection["id"]
-
-                with col3:
-                    if st.button("Obriši", key=f"delete_{collection['id']}"):
-                        st.session_state["confirm_delete"] = collection["id"]
-
-                if st.session_state.get("confirm_delete") == collection["id"]:
-                    st.warning(f"Da li ste sigurni da želite da obrišete bazu **{collection['id']}**?")
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        if st.button("Obriši", key=f"confirm_{collection['id']}"):
-                            del_response = requests.delete(f"{API_URL}/coaches/{collection['id']}")
-                            if del_response.status_code == 200:
-                                st.success(f"Baza {collection['id']} obrisana.")
-                                st.session_state.pop("confirm_delete", None)
-                                st.rerun()
-                    with c2:
-                        if st.button("Otkaži", key=f"cancel_{collection['id']}"):
-                            st.session_state.pop("confirm_delete", None)
-                            st.rerun()
-
-                if st.session_state.get("preview_collection") == collection["id"]:
-                    preview_response = requests.get(f"{API_URL}/coaches/{collection['id']}/chunks")
-                    if preview_response.status_code == 200:
-                        chunks = preview_response.json()["chunks"]
-                        st.markdown(f"**Chunkovi za {collection['id']}:**")
-                        for i, chunk in enumerate(chunks[:10]):
-                            st.text_area(f"Chunk {i+1}", value=chunk, height=80, disabled=True,
-                                         key=f"chunk_{collection['id']}_{i}")
-                        if len(chunks) > 10:
-                            st.caption(f"... i još {len(chunks) - 10} chunkova")
-                    if st.button("Zatvori pregled", key=f"close_{collection['id']}"):
-                        st.session_state.pop("preview_collection", None)
+        # Logika za potvrdni dijalog pri brisanju
+        if st.session_state.get("confirm_delete") == collection['id']:
+            st.warning(f"Da li ste sigurni da želite da obrišete bazu **{collection['id']}**?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Obriši", key=f"confirm_{collection['id']}"):
+                    del_response = requests.delete(f"{API_URL}/coaches/{collection['id']}")
+                    if del_response.status_code == 200:
+                        st.success(f"Baza {collection['id']} obrisana.")
+                        st.session_state.pop("confirm_delete", None)
                         st.rerun()
+            with c2:
+                if st.button("Otkaži", key=f"cancel_{collection['id']}"):
+                    st.session_state.pop("confirm_delete", None)
+                    st.rerun()
+
+        # Pregled segmenata ulogovanog trenera
+        if st.session_state.get("preview_collection") == collection['id']:
+            preview_response = requests.get(f"{API_URL}/coaches/{collection['id']}/chunks")
+            if preview_response.status_code == 200:
+                chunks = preview_response.json()["chunks"]
+                st.markdown(f"**Segmenti za {collection['id']}:**")
+                for i, chunk in enumerate(chunks[:10]):
+                    st.text_area(
+                        f"Chunk {i+1}", 
+                        value=chunk, 
+                        height=300, 
+                        disabled=True,
+                        key=f"chunk_{collection['id']}_{i}"
+                    )
+                if len(chunks) > 10:
+                    st.caption(f"... i još {len(chunks) - 10} segmenata")
+            
+            if st.button("Zatvori pregled", key=f"close_{collection['id']}"):
+                st.session_state.pop("preview_collection", None)
+                st.rerun()
+
+    elif response.status_code == 404:
+        st.info("Nemate još uvek nijednu bazu znanja.")
     else:
-        st.error("Greška pri dohvatanju baza znanja.")
+        st.error("Greška pri dohvatanju baze znanja.")
+
 except Exception as e:
-    st.error(f"Server nije dostupan: {e}")
+    st.error(f"Došlo je do greške: {e}")

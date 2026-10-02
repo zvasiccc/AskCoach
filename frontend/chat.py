@@ -11,7 +11,6 @@ from shared.models import RoleEnum
 API_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="ChatWithAI", layout="centered")
-st.title("Chat with AI")
 
 
 def check_login(username, password):
@@ -29,7 +28,7 @@ if "current_user" not in st.session_state:
 
 if st.session_state["current_user"] is None:
     st.title("Prijava")
-    username_input = st.text_input("Korisničko ime")
+    username_input = st.text_input("Korisnicko ime")
     password_input = st.text_input("Lozinka", type="password")
     if st.button("Prijavi se"):
         user = check_login(username_input, password_input)
@@ -118,7 +117,7 @@ if user_input := st.chat_input("Postavi pitanje..."):
         with st.expander("Debug"):
             st.write(f"**Collection:** {selected_coach_id} | **Client:** {selected_client_id}")
             for i, chunk in enumerate(context):
-                st.text_area(f"Chunk {i+1}", value=chunk, height=80, disabled=True,
+                st.text_area(f"Chunk {i+1}", value=chunk, height=300, disabled=True,
                              key=f"chunk_{len(st.session_state['messages'])}_{i}")
 
     st.session_state["messages"].append({"role": "assistant", "content": answer})

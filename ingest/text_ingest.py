@@ -14,7 +14,7 @@ from db.chroma import ChromaDBManager
 load_dotenv()
 
 
-def ingest_raw_text(text_content, coach_id, client_id, source_name="manual_upload"):
+def ingest_raw_text(text_content, coach_id, client_id):
     embeddings_model = get_embeddings_model()
     db = ChromaDBManager()
 
@@ -36,7 +36,6 @@ def ingest_raw_text(text_content, coach_id, client_id, source_name="manual_uploa
         embeddings.append(vector)
         ids.append(str(uuid.uuid4()))
         metadatas.append({
-            "source": source_name,
             "coach_id": coach_id,
             "client_id": client_id if client_id else "unknown"
             })
@@ -48,7 +47,6 @@ def ingest_raw_text(text_content, coach_id, client_id, source_name="manual_uploa
         metadatas=metadatas,
         embeddings=embeddings
     )
-    print(f"Uspesno dodato u bazu za trenera: {coach_id}")
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     import fitz

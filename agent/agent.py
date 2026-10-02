@@ -35,18 +35,6 @@ eval_llm = ChatGroq(
 eval_model = GroqModel(model=eval_llm)
 
 
-def vector_search(query_variants: list[str], collection, n_results: int = 10) -> dict[str, float]:
-    seen_docs = {}
-    for variant in query_variants:
-        query_vector = embeddings_model.embeddings_query(variant)
-        results = collection.query(
-            query_embeddings=[query_vector],
-            n_results=n_results
-        )
-        for doc, dist in zip(results["documents"][0], results["distances"][0]):
-            if doc not in seen_docs or dist < seen_docs[doc]:
-                seen_docs[doc] = dist
-    return {doc: dist for doc, dist in seen_docs.items() if dist <= MAX_DISTANCE}
 
 
 def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
@@ -80,7 +68,7 @@ def ask_question(question: str, coach_id: str,client_id:str, history:list=[],rol
 
     reranked_documents = rerank(question, raw_docs)
 
-    response = generate_promt_with_context_and_message_history(question, reranked_documents, history,role)
+    response =  (question, reranked_documents, history,role)
 
     return response, reranked_documents
 
@@ -100,24 +88,22 @@ def run_evaluation(question, answer, context):
     print(f"Razlog:{faithfulness.reason}")
 
 
-# if __name__ == "__main__":
-#     eval_mode = input("Evaluacioni mod? (y/n): ").strip().lower() == "y"
+if __name__ == "__main__":
 
-#     while True:
-#         user_query = input("\nKorisnik: ").strip()
-#         if not user_query:
-#             continue
-#         if user_query.lower() in ["exit", "izlaz"]:
-#             break
+    question = "Koja je osnovu suplementacije za sve svoje klijente?"
 
-#         llm_answer, used_context = ask_question(user_query, "trener_nikola")
-#         print(f"\nASISTENT: {llm_answer}")
+    user_id_1 = "korisnik_jovan"
+    answer_jovan, documents_jovan = ask_question(question, coach_id=user_id_1, client_id=None)
 
-#         if eval_mode and used_context:
-#             try:
-#                 print("\n[EVALUACIJA U TOKU...]")
-#                 run_evaluation(user_query, llm_answer, used_context)
-#             except Exception as e:
-#                 print(f"Evaluacija nije uspela: {e}")
+    user_id_2 = "korisnik_stefan"
+    answer_stefan, documents_stefan = ask_question(question, coach_id=user_id_2, client_id=None)
 
-#         print("-" * 50)
+    print(f"Kolekcija dokumenata za korisnika: {user_id_1}")
+    print(f"Dohvaceni dokumenti:\n{documents_jovan}\n")
+    print(f"Odgovor asistenta:\n{answer_jovan}\n")
+
+    print("--------------------------------------------------------")
+
+    print(f"Kolekcija dokumenata za korisnika: {user_id_2}")
+    print(f"Dohvaceni dokumenti:\n{documents_stefan}\n")
+    print(f"Odgovor asistenta:\n{answer_stefan}\n")

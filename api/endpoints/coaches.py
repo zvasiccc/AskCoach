@@ -23,11 +23,8 @@ async def ask(request: AskRequest):
         client_id=request.client_id,
         history=request.history,
         role=request.role
-    )
-    return {
-        "answer": answer,
-        "context": context
-    }
+    )   
+    return {"answer": answer,"context": context}
 
 @app.post("/upload")
 async def upload_knowledge(
@@ -40,10 +37,23 @@ async def upload_knowledge(
         text = extract_text_from_pdf(content)
     else:
         text = content.decode("utf-8")
-    ingest_raw_text(text, coach_id, client_id, source_name=file.filename)
+    ingest_raw_text(text, coach_id, client_id)
     return {"message": f"Baza '{coach_id}' je uspesno azurirana fajlom {file.filename}."}
 
 #pomocne funkcije
+@app.get("/coaches/{coach_id}")
+async def get_coach_collection_data(coach_id: str):
+    all_coaches = db.list_coaches()
+    if coach_id not in all_coaches:
+        raise HTTPException(status_code=404, detail="Kolekcija nije pronadjena.")
+    
+    collection = db.get_coach_collection(coach_id)
+    return {
+        "id": coach_id,
+        "collection_name": collection.name,
+        "chunk_count": collection.count()
+    }
+
 @app.get("/coaches")
 async def list_coaches():
     coaches = []

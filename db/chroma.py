@@ -7,7 +7,6 @@ load_dotenv()
 
 class ChromaDBManager:
     def __init__(self):
-        #fizicka lokacija baze na disku
         self.persist_directory = os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.client = chromadb.PersistentClient(path=self.persist_directory)
         self._bm25_cache = {}
