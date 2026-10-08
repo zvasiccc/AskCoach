@@ -58,16 +58,16 @@ with st.sidebar:
 
         if client_options:
             selected_client_name = st.selectbox("Izaberi klijenta:", list(client_options.keys()))
-            selected_client_id = client_options[selected_client_name]
-            selected_coach_id = current_user["username"]
+            client_id = client_options[selected_client_name]
+            coach_id = current_user["username"]
         else:
             st.warning("Nema dodeljenih klijenata.")
-            selected_client_id = None
-            selected_coach_id = None
+            client_id = None
+            coach_id = None
     else:
-        selected_coach_id = current_user["coach_id"]
-        selected_client_id = current_user["username"]
-        st.caption(f"Tvoj trener: **{selected_coach_id}**")
+        coach_id = current_user["coach_id"]
+        client_id = current_user["username"]
+        st.caption(f"Tvoj trener: **{coach_id}**")
 
     if st.button("Očisti konverzaciju"):
         st.session_state["messages"] = []
@@ -94,8 +94,8 @@ if user_input := st.chat_input("Postavi pitanje..."):
         with st.spinner("Razmišljam..."):
             try:
                 payload = {
-                    "coach_id": selected_coach_id,
-                    "client_id": selected_client_id,
+                    "coach_id": coach_id,
+                    "client_id": client_id,
                     "question": user_input,
                     "history": st.session_state["messages"][:-1],
                     "role": role
@@ -115,7 +115,7 @@ if user_input := st.chat_input("Postavi pitanje..."):
         st.write(answer)
 
         with st.expander("Debug"):
-            st.write(f"**Collection:** {selected_coach_id} | **Client:** {selected_client_id}")
+            st.write(f"**Collection:** {coach_id} | **Client:** {client_id}")
             for i, chunk in enumerate(context):
                 st.text_area(f"Chunk {i+1}", value=chunk, height=300, disabled=True,
                              key=f"chunk_{len(st.session_state['messages'])}_{i}")

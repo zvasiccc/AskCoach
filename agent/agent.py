@@ -68,7 +68,12 @@ def ask_question(question: str, coach_id: str,client_id:str, history:list=[],rol
 
     reranked_documents = rerank(question, raw_docs)
 
-    response =  (question, reranked_documents, history,role)
+    response = generate_promt_with_context_and_message_history(
+        question=question, 
+        context=reranked_documents, 
+        history=history, 
+        role=role
+    )
 
     return response, reranked_documents
 
@@ -90,7 +95,7 @@ def run_evaluation(question, answer, context):
 
 if __name__ == "__main__":
 
-    question = "Koja je osnovu suplementacije za sve svoje klijente?"
+    question = "Koje suplemente preporucujem za svoje klijente?"
 
     user_id_1 = "korisnik_jovan"
     answer_jovan, documents_jovan = ask_question(question, coach_id=user_id_1, client_id=None)
