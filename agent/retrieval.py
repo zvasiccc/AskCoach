@@ -4,11 +4,8 @@ import re
 import sys
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from flashrank import Ranker, RerankRequest
 from deepeval.models.base_model import DeepEvalBaseLLM
-from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
-from deepeval.test_case import LLMTestCase
 from rank_bm25 import BM25Okapi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -52,7 +49,7 @@ def get_bm25(collection, coach_id: str, db_cache, client_id:str = None):
     cache_key = (coach_id, client_id)
     count = collection.count()
     if cache_key not in db_cache or db_cache[cache_key]["count"] != count:
-        where = {"client_id": client_id} if client_id else None
+        where = {"client_id": client_id}
         all_docs = collection.get(where=where)["documents"]
 
         if not all_docs:

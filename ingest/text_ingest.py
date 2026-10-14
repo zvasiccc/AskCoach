@@ -37,7 +37,7 @@ def ingest_raw_text(text_content, coach_id, client_id):
         ids.append(str(uuid.uuid4()))
         metadatas.append({
             "coach_id": coach_id,
-            "client_id": client_id if client_id else "unknown"
+            "client_id": client_id
             })
 
     db.add_to_collection(
@@ -55,6 +55,3 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     for page in doc:
         text += page.get_text()
     return text
-    
-# if __name__ == "__main__":
-#     ingest_raw_text(ingested_text_2, "trener_zeljko")

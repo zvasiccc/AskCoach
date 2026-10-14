@@ -70,7 +70,7 @@ if not client_options:
 
 selected_client_name = st.selectbox("Izaberi klijenta:", list(client_options.keys()))
 selected_client_id = client_options[selected_client_name]
-selected_coach_id = current_user["username"]
+coach_id = current_user["username"]
 
 uploaded_file = st.file_uploader("Odaberite fajl", type=["txt", "pdf"])
 
@@ -79,14 +79,13 @@ if st.button("Učitaj u bazu"):
         with st.spinner("Obrađujem..."):
             files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/plain")}
             data = {
-                "coach_id": selected_coach_id,
+                "coach_id": coach_id,
                 "client_id": selected_client_id
             }
             try:
                 response = requests.post(f"{API_URL}/upload", data=data, files=files)
                 if response.status_code == 200:
                     st.success(response.json()["message"])
-                    st.rerun()
                 else:
                     st.error("Greška pri slanju na server.")
             except Exception as e:
@@ -110,7 +109,7 @@ try:
         col1, col2, col3 = st.columns([3, 1, 1])
         
         with col1:
-            st.write(f"**{collection['id']}** - {collection['chunk_count']} segment")
+            st.write(f"**{collection['id']}** - {collection['chunk_count']} segmenata")
 
         with col2:
             if st.button("Pregled", key=f"preview_{collection['id']}"):

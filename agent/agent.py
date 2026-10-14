@@ -4,12 +4,9 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from flashrank import Ranker, RerankRequest
-from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
-from deepeval.test_case import LLMTestCase
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from shared.models import GroqModel, RoleEnum
+from shared.models import  RoleEnum
 
 
 from agent.retrieval import hybrid_retrieve
@@ -24,16 +21,6 @@ llm = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
-
-eval_llm = ChatGroq(
-    model="openai/gpt-oss-120b",
-    groq_api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0
-)
-
-eval_model = GroqModel(model=eval_llm)
-
-
 
 
 def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
@@ -95,19 +82,4 @@ def ask_question(question: str, coach_id: str, client_id: str, history: list= []
     )
 
     return response, reranked_documents
-
-
-def run_evaluation(question, answer, context):
-    test_case = LLMTestCase(
-        input=question,
-        actual_output=answer,
-        retrieval_context=context
-    )
-    faithfulness = FaithfulnessMetric(threshold=0.7, model=eval_model)
-    relevancy = AnswerRelevancyMetric(threshold=0.5, model=eval_model)
-    faithfulness.measure(test_case)
-    relevancy.measure(test_case)
-    print(f"Faithfulness:{faithfulness.score:.2f}")
-    print(f"Relevancy:{relevancy.score:.2f}")
-    print(f"Razlog:{faithfulness.reason}")
 

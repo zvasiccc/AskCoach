@@ -1,5 +1,4 @@
 import chromadb
-from chromadb.config import Settings
 import os
 from dotenv import load_dotenv
 
@@ -30,13 +29,6 @@ class ChromaDBManager:
     def invalidate_cache(self, coach_id: str):
         for key in [k for k in self._bm25_cache if k[0] == coach_id]:
             del self._bm25_cache[key]
-
-    def query_collection(self, coach_id: str, query_embeddings: list, n_results: int = 3):
-        collection = self.get_coach_collection(coach_id)
-        return collection.query(
-            query_embeddings=query_embeddings,
-            n_results=n_results
-        )
 
     def delete_collection(self, coach_id: str):
         collection_name = f"coach_{coach_id}"

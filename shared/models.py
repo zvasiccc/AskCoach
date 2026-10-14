@@ -21,19 +21,3 @@ class AskRequest(BaseModel):
     history: Optional[list[Message]] = []  
     role: str 
 
-
-class GroqModel(DeepEvalBaseLLM):
-    def __init__(self, model):
-        self.model = model
-
-    def load_model(self):
-        return self.model
-
-    def generate(self, prompt: str) -> str:
-        return self.load_model().invoke(prompt).content
-
-    async def a_generate(self, prompt: str) -> str:
-        return (await self.load_model().ainvoke(prompt)).content
-
-    def get_model_name(self):
-        return self.model.model_name
