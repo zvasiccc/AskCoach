@@ -5,7 +5,6 @@ import sys
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from flashrank import Ranker, RerankRequest
-from deepeval.models.base_model import DeepEvalBaseLLM
 from rank_bm25 import BM25Okapi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

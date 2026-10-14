@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel
-from deepeval.models.base_model import DeepEvalBaseLLM
 
 
 class RoleEnum(str, Enum):
