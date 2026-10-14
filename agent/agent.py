@@ -9,16 +9,15 @@ from deepeval.test_case import LLMTestCase
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ingest.embeddings import get_embeddings_model
 from shared.models import GroqModel, RoleEnum
 
 
 from agent.retrieval import hybrid_retrieve
-from prompts import  MAX_DISTANCE, get_system_prompt
+from prompts import get_system_prompt, NO_DOCS_MESSAGE, MAX_HISTORY_MESSAGES, CONDENSE_QUESTION_PROMPT
 load_dotenv()
 
 ranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
-embeddings_model = get_embeddings_model()
+
 
 llm = ChatGroq(
     model="openai/gpt-oss-20b",
@@ -45,12 +44,30 @@ def rerank(question: str, docs: list[str], top_k: int = 3) -> list[str]:
     results = ranker.rerank(RerankRequest(query=question, passages=passages))
     return [res["text"] for res in results[:top_k]]
 
-def generate_promt_with_context_and_message_history(question: str, context: list[str], history: list = [], role: str = RoleEnum.Coach) -> str:
+def condense_question(question: str, history: list) -> str:
+    if not history:
+        return question
+
+    history_text  = ""
+    for msg in history[-MAX_HISTORY_MESSAGES:]:
+        if msg.role == "user":
+            history_text  += f"Korisnik: {msg.content}\n"
+        else:
+            history_text  += f"Asistent: {msg.content}\n"
+
+    prompt = CONDENSE_QUESTION_PROMPT.format(history=history_text , question=question)
+    standalone = llm.invoke(prompt).content.strip()
+
+    return standalone or question
+
+
+def generate_answer_with_context_and_message_history(question: str, context: list[str], history: list | None = None, role: str = RoleEnum.Coach) -> str:
+    history = history or []
     context_str = "\n---\n".join(context)
     system_prompt = get_system_prompt(role)
 
     messages = [SystemMessage(content=system_prompt)]
-    for msg in history:
+    for msg in history[-MAX_HISTORY_MESSAGES:]:
         if msg.role == "user":
             messages.append(HumanMessage(content=msg.content))
         elif msg.role == "assistant":
@@ -59,16 +76,18 @@ def generate_promt_with_context_and_message_history(question: str, context: list
     messages.append(HumanMessage(content=f"KONTEKST:\n{context_str}\n\nPITANJE:\n{question}"))
     return llm.invoke(messages).content
 
-def ask_question(question: str, coach_id: str,client_id:str, history:list=[],role: str = RoleEnum.Coach):
+def ask_question(question: str, coach_id: str, client_id: str, history: list= [], role: str = RoleEnum.Coach):
 
-    raw_docs = hybrid_retrieve(question, coach_id,client_id)
+    search_question = condense_question(question, history)
 
-    if not raw_docs :
-        return "Nazalost, trazena informacija se ne nalazi u bazi znanja.", []
+    raw_docs = hybrid_retrieve(search_question, coach_id, client_id)
 
-    reranked_documents = rerank(question, raw_docs)
+    if not raw_docs:
+        return NO_DOCS_MESSAGE, []
 
-    response = generate_promt_with_context_and_message_history(
+    reranked_documents = rerank(search_question, raw_docs)
+
+    response = generate_answer_with_context_and_message_history(
         question=question, 
         context=reranked_documents, 
         history=history, 
@@ -92,23 +111,3 @@ def run_evaluation(question, answer, context):
     print(f"Relevancy:{relevancy.score:.2f}")
     print(f"Razlog:{faithfulness.reason}")
 
-
-if __name__ == "__main__":
-
-    question = "Koje suplemente preporucujem za svoje klijente?"
-
-    user_id_1 = "korisnik_jovan"
-    answer_jovan, documents_jovan = ask_question(question, coach_id=user_id_1, client_id=None)
-
-    user_id_2 = "korisnik_stefan"
-    answer_stefan, documents_stefan = ask_question(question, coach_id=user_id_2, client_id=None)
-
-    print(f"Kolekcija dokumenata za korisnika: {user_id_1}")
-    print(f"Dohvaceni dokumenti:\n{documents_jovan}\n")
-    print(f"Odgovor asistenta:\n{answer_jovan}\n")
-
-    print("--------------------------------------------------------")
-
-    print(f"Kolekcija dokumenata za korisnika: {user_id_2}")
-    print(f"Dohvaceni dokumenti:\n{documents_stefan}\n")
-    print(f"Odgovor asistenta:\n{answer_stefan}\n")

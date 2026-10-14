@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import os
@@ -44,7 +43,7 @@ role = current_user["uloga"]
 
 
 with st.sidebar:
-    st.caption(f"{current_user['full_name']} — {role}")
+    st.caption(f"{current_user['full_name']} - {role}")
 
     if role == RoleEnum.Coach:
         all_users = st.secrets.get("korisnici", {})
@@ -76,9 +75,18 @@ with st.sidebar:
     if st.button("Odjavi se"):
         st.session_state["current_user"] = None
         st.session_state["messages"] = []
+        st.session_state.pop("active_client", None)
         st.rerun()
 
+if client_id is None:
+    st.stop()
+
 if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+
+if st.session_state.get("active_client") != client_id:
+    st.session_state["active_client"] = client_id
     st.session_state["messages"] = []
 
 for msg in st.session_state["messages"]:
@@ -114,10 +122,10 @@ if user_input := st.chat_input("Postavi pitanje..."):
 
         st.write(answer)
 
-        with st.expander("Debug"):
-            st.write(f"**Collection:** {coach_id} | **Client:** {client_id}")
-            for i, chunk in enumerate(context):
-                st.text_area(f"Chunk {i+1}", value=chunk, height=300, disabled=True,
-                             key=f"chunk_{len(st.session_state['messages'])}_{i}")
+        # with st.expander("Debug"):
+        #     st.write(f"**Collection:** {coach_id} | **Client:** {client_id}")
+        #     for i, chunk in enumerate(context):
+        #         st.text_area(f"Chunk {i+1}", value=chunk, height=300, disabled=True,
+        #                      key=f"chunk_{len(st.session_state['messages'])}_{i}")
 
     st.session_state["messages"].append({"role": "assistant", "content": answer})

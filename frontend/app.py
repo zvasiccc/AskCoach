@@ -40,7 +40,7 @@ if st.session_state["current_user"] is None:
 current_user = st.session_state["current_user"]
 role = current_user["uloga"]
 
-# Samo trener moze da pristupi upload stranici
+
 if role != RoleEnum.Coach:
     st.error("Nemate pristup ovoj stranici.")
     st.stop()
@@ -48,12 +48,11 @@ if role != RoleEnum.Coach:
 st.title("Upravljanje bazom znanja")
 
 with st.sidebar:
-    st.caption(f"{current_user['full_name']} — {role}")
+    st.caption(f"{current_user['full_name']} - {role}")
     if st.button("Odjavi se"):
         st.session_state["current_user"] = None
         st.rerun()
 
-# ── UPLOAD ────────────────────────────────────────────────────────
 st.header("Dodaj znanje")
 
 all_users = st.secrets.get("korisnici", {})
@@ -111,7 +110,7 @@ try:
         col1, col2, col3 = st.columns([3, 1, 1])
         
         with col1:
-            st.write(f"**{collection['id']}** — {collection['chunk_count']} segment")
+            st.write(f"**{collection['id']}** - {collection['chunk_count']} segment")
 
         with col2:
             if st.button("Pregled", key=f"preview_{collection['id']}"):
@@ -121,7 +120,6 @@ try:
             if st.button("Obriši", key=f"delete_{collection['id']}"):
                 st.session_state["confirm_delete"] = collection['id']
 
-        # Logika za potvrdni dijalog pri brisanju
         if st.session_state.get("confirm_delete") == collection['id']:
             st.warning(f"Da li ste sigurni da želite da obrišete bazu **{collection['id']}**?")
             c1, c2 = st.columns(2)
@@ -137,7 +135,6 @@ try:
                     st.session_state.pop("confirm_delete", None)
                     st.rerun()
 
-        # Pregled segmenata ulogovanog trenera
         if st.session_state.get("preview_collection") == collection['id']:
             preview_response = requests.get(f"{API_URL}/coaches/{collection['id']}/chunks")
             if preview_response.status_code == 200:

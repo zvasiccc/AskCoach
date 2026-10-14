@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from shared.models import AskRequest
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from ingest.text_ingest import extract_text_from_pdf, ingest_raw_text
@@ -73,4 +73,4 @@ async def delete_coach(coach_id: str):
     success = db.delete_collection(coach_id)
     if success:
         return {"message": f"Baza za {coach_id} obrisana."}
-    return {"message": "Greška pri brisanju."}, 400
+    raise HTTPException(status_code=400, detail="Greška pri brisanju.")

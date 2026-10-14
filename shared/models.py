@@ -10,7 +10,7 @@ class RoleEnum(str, Enum):
 
 
 class Message(BaseModel):
-    role: str   
+    role: str  
     content: str
 
 
@@ -19,7 +19,7 @@ class AskRequest(BaseModel):
     client_id: str
     question: str
     history: Optional[list[Message]] = []  
-    role: str = RoleEnum.Coach
+    role: str 
 
 
 class GroqModel(DeepEvalBaseLLM):

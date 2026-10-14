@@ -41,16 +41,15 @@ def expand_query(question: str) -> list[str]:
         return [question]
 
 
-def bm25_search(question: str, bm25, all_docs: list[str], top_k: int = 10) -> list[tuple[str, float]]:
+def bm25_search(question: str, bm25, all_docs: list[str], top_k: int = 5) -> list[tuple[str, float]]:
     if not bm25 or not all_docs:
         return []
     scores = bm25.get_scores(tokenize(question))
     doc_scores = sorted(zip(all_docs, scores), key=lambda x: x[1], reverse=True)
     return [(doc, score) for doc, score in doc_scores[:top_k] if score > 0]
 
-#vraca bm25 indeks svih chunkova trenera
 def get_bm25(collection, coach_id: str, db_cache, client_id:str = None):
-    cache_key = f"{coach_id}_{client_id}" if client_id else coach_id
+    cache_key = (coach_id, client_id)
     count = collection.count()
     if cache_key not in db_cache or db_cache[cache_key]["count"] != count:
         where = {"client_id": client_id} if client_id else None
@@ -69,7 +68,7 @@ def get_bm25(collection, coach_id: str, db_cache, client_id:str = None):
 
 def vector_search(question_variants: list[str], collection, n_results: int = 10, client_id: str = None) -> dict[str, float]:
     seen_docs = {}
-    where = {"client_id": client_id} if client_id else None
+    where = {"client_id": client_id}
 
     for variant in question_variants:
         query_vector = embeddings_model.embeddings_query(variant)
@@ -113,5 +112,3 @@ def hybrid_retrieve(question: str, coach_id: str,client_id:str) -> list[str]:
 
     sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
     return [doc for doc, _ in sorted_docs[:10]]
-
-
